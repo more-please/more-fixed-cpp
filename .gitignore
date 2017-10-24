@@ -1,12 +1,15 @@
-# OS X
-.DS_Store
+# Build output
+more_fixed_test
+
+# CMake
+CMakeFiles
+CmakeCache.txt
+*.cmake
 
 # Ninja
 .ninja_deps
 .ninja_log
 *.ninja
 
-# CMake
-CMakeFiles
-CmakeCache.txt
-*.cmake
+# OS X
+.DS_Store
