@@ -10,7 +10,20 @@
 
 namespace more
 {
-	template <int BITS> class fixed
+	// -------------------------------------------------------------------------
+	// Standard formats
+	//
+	// All fixed-point types are currently 32 bits in size.
+	// BITS is the number of fractional bits, so fixed<16> is 16.16 fixed point.
+
+	template <int BITS> struct fixed;
+
+	typedef fixed<16> fixed16;
+
+	// -------------------------------------------------------------------------
+	// Implementation
+
+	template <int BITS> struct fixed
 	{
 		int32_t _repr;
 
@@ -281,11 +294,6 @@ namespace more
 	{
 		return f.repr() != 0;
 	}
-
-	// -------------------------------------------------------------------------
-	// Typedefs for standard formats
-
-	typedef fixed<16> fixed16;
 }
 
 namespace std
