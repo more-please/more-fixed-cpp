@@ -10,139 +10,75 @@
 
 namespace more
 {
-	template <typename T, int BITS> class Fixed
+	template <int BITS> class fixed
 	{
-		T _val;
+		int32_t _repr;
+
+		static constexpr int SCALE = 1 << BITS;
+
+		typedef fixed F;
 
 	public:
-		typedef Fixed<T, BITS> F;
+		typedef int32_t repr_t;
 
-		enum
+		fixed() = default;
+		fixed(const F&) = default;
+
+		template <typename T> fixed(T value)
 		{
-			SCALE = 1 << BITS,
-			MAX = std::numeric_limits<T>::max() / SCALE,
-			MIN = std::numeric_limits<T>::min() / SCALE,
-
-			FRACT_MASK = SCALE - 1,
-			TRUNC_MASK = ~FRACT_MASK,
-		};
-
-		Fixed() = default;
-		Fixed(const Fixed&) = default;
-
-		static double check(double val)
-		{
-			static double hi = 0;
-			static double lo = 0;
-			if (val > hi)
-			{
-				hi = val;
-				printf("High water mark: %f\n", hi);
-			}
-			if (val < lo)
-			{
-				lo = val;
-				printf("Low water mark: %f\n", lo);
-			}
-			if (val > MAX)
-			{
-				return MAX;
-			}
-			if (val <= MIN)
-			{
-				return MIN;
-			}
-			return val;
+			if (value > T(limits::max()))
+				value = T(limits::max());
+			if (value < T(limits::min()))
+				value = T(limits::min());
+			_repr = repr_t(value * SCALE);
 		}
 
-		template <typename V> Fixed(V val)
+		template <typename T> F& operator=(T value)
 		{
-			_val = check(val) * SCALE;
+			if (value > T(limits::max()))
+				value = T(limits::max());
+			if (value < T(limits::min()))
+				value = T(limits::min());
+			return set_repr(value * SCALE);
 		}
 
-		template <typename V> F& operator=(V val)
+		template <typename T> explicit operator T() const
 		{
-			return set_bits(val * SCALE);
+			return T(_repr) / T(SCALE);
 		}
 
 		// ---------------------------------------------------------------------
 		// Bitwise accessors
 
-		T bits() const
+		repr_t repr() const
 		{
-			return _val;
+			return _repr;
 		}
-		static F from_bits(T bits)
+
+		static F from_repr(repr_t repr)
 		{
 			F result;
-			result._val = bits;
+			result._repr = repr;
 			return result;
 		}
 
-		F& set_bits(T bits)
+		F& set_repr(repr_t repr)
 		{
-			_val = bits;
+			_repr = repr;
 			return *this;
-		}
-
-		// ---------------------------------------------------------------------
-		// Conversions
-
-		explicit operator float() const
-		{
-			return _val / float(SCALE);
-		}
-		explicit operator double() const
-		{
-			return _val / double(SCALE);
-		}
-		explicit operator long long() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator long() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator int() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator short() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator char() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator unsigned long long() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator unsigned long() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator unsigned int() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator unsigned short() const
-		{
-			return _val >> BITS;
-		}
-		explicit operator unsigned char() const
-		{
-			return _val >> BITS;
 		}
 
 		// ---------------------------------------------------------------------
 		// Operators
 
+		F operator+() const
+		{
+			return *this;
+		}
+
 		F operator-() const
 		{
-			return -double(*this);
+			return from_repr(-_repr);
 		}
 
 		F operator+(F rhs) const
@@ -179,34 +115,56 @@ namespace more
 		}
 		F& operator/=(F rhs)
 		{
-			*this = double(_val) / double(rhs._val);
+			*this = double(_repr) / double(rhs._repr);
 			return *this;
 		}
 
 		bool operator<(F rhs) const
 		{
-			return _val < rhs._val;
+			return _repr < rhs._repr;
 		}
 		bool operator<=(F rhs) const
 		{
-			return _val <= rhs._val;
+			return _repr <= rhs._repr;
 		}
 		bool operator>(F rhs) const
 		{
-			return _val > rhs._val;
+			return _repr > rhs._repr;
 		}
 		bool operator>=(F rhs) const
 		{
-			return _val >= rhs._val;
+			return _repr >= rhs._repr;
 		}
 		bool operator==(F rhs) const
 		{
-			return _val == rhs._val;
+			return _repr == rhs._repr;
 		}
 		bool operator!=(F rhs) const
 		{
-			return _val != rhs._val;
+			return _repr != rhs._repr;
 		}
+
+		// ---------------------------------------------------------------------
+		// numeric_limits
+
+		typedef std::numeric_limits<repr_t> repr_limits;
+
+		struct limits
+		{
+			static constexpr bool is_specialized = true;
+			static constexpr F min()
+			{
+				return from_repr(repr_limits::min());
+			}
+			static constexpr F max()
+			{
+				return from_repr(repr_limits::max());
+			}
+			static constexpr F epsilon()
+			{
+				return from_repr(1);
+			}
+		};
 
 		// ---------------------------------------------------------------------
 		// math.h
@@ -233,31 +191,27 @@ namespace more
 		}
 		static F floor(F f)
 		{
-			return from_bits(f._val & TRUNC_MASK);
+			return ::floor(double(f));
 		}
 		static F ceil(F f)
 		{
-			return from_bits(f._val & TRUNC_MASK);
+			return ::ceil(double(f));
 		}
 	};
 
-	typedef Fixed<int32_t, 16> fixed16;
-
 // -----------------------------------------------------------------------------
-// Implicit conversions for "float (op) fixed16" expressions
+// Implicit conversions for "double (op) fixed16" expressions
 
 #define MORE_FIXED__OP(OP)                                                     \
-	template <typename V, typename T, int B>                                   \
-	Fixed<T, B> operator OP(V lhs, Fixed<T, B> rhs)                            \
+	template <typename T, int B> fixed<B> operator OP(T lhs, fixed<B> rhs)     \
 	{                                                                          \
-		return Fixed<T, B>(lhs) OP rhs;                                        \
+		return fixed<B>(lhs) OP rhs;                                           \
 	}
 
 #define MORE_FIXED__CMP(CMP)                                                   \
-	template <typename V, typename T, int B>                                   \
-	bool operator CMP(V lhs, Fixed<T, B> rhs)                                  \
+	template <typename T, int B> bool operator CMP(T lhs, fixed<B> rhs)        \
 	{                                                                          \
-		return Fixed<T, B>(lhs) CMP rhs;                                       \
+		return fixed<B>(lhs) CMP rhs;                                          \
 	}
 
 	MORE_FIXED__OP(+)
@@ -273,62 +227,73 @@ namespace more
 #undef MORE_FIXED__OP
 #undef MORE_FIXED__CMP
 
-	// -------------------------------------------------------------------------
-	// Forward math.h functions to class
+// -------------------------------------------------------------------------
+// Forward math.h functions to class
 
-	template <typename T> T sinf(T val)
-	{
-		return T::sin(val);
+#define MORE_FIXED__TRIG(TRIG)                                                 \
+	template <int N> fixed<N> TRIG(fixed<N> f)                                 \
+	{                                                                          \
+		return fixed<N>::TRIG(f);                                              \
+	}                                                                          \
+	template <int N> fixed<N> TRIG##f(fixed<N> f)                              \
+	{                                                                          \
+		return fixed<N>::TRIG(f);                                              \
 	}
-	template <typename T> T cosf(T val)
-	{
-		return T::cos(val);
+
+#define MORE_FIXED__TRIG2(TRIG)                                                \
+	template <int N> fixed<N> TRIG(fixed<N> a, fixed<N> b)                     \
+	{                                                                          \
+		return fixed<N>::TRIG(a, b);                                           \
+	}                                                                          \
+	template <int N> fixed<N> TRIG##f(fixed<N> a, fixed<N> b)                  \
+	{                                                                          \
+		return fixed<N>::TRIG(a, b);                                           \
 	}
-	template <typename T> T atan2f(T a, T b)
+
+	MORE_FIXED__TRIG(sin)
+	MORE_FIXED__TRIG(cos)
+	MORE_FIXED__TRIG(tan)
+	MORE_FIXED__TRIG2(atan2)
+	MORE_FIXED__TRIG(sqrt)
+	MORE_FIXED__TRIG(exp)
+	MORE_FIXED__TRIG(ceil)
+	MORE_FIXED__TRIG(floor)
+
+#undef MORE_FIXED__TRIG
+#undef MORE_FIXED__TRIG2
+
+	// -------------------------------------------------------------------------
+	// Classification functions
+
+	template <int N> bool isfinite(fixed<N>)
 	{
-		return T::atan2(a, b);
+		return true;
 	}
-	template <typename T> T sqrtf(T val)
+	template <int N> bool isinf(fixed<N>)
 	{
-		return T::sqrt(val);
+		return false;
 	}
-	template <typename T> T expf(T val)
+	template <int N> bool isnan(fixed<N>)
 	{
-		return T::exp(val);
+		return false;
 	}
-	template <typename T> T floorf(T val)
+	template <int N> bool isnormal(fixed<N> f)
 	{
-		return T::floor(val);
+		return f.repr() != 0;
 	}
-	template <typename T> T ceilf(T val)
-	{
-		return T::ceil(val);
-	}
+
+	// -------------------------------------------------------------------------
+	// Typedefs for standard formats
+
+	typedef fixed<16> fixed16;
 }
 
 namespace std
 {
-	template <> class numeric_limits<more::fixed16>
+	template <>
+	struct numeric_limits<more::fixed16> : public more::fixed16::limits
 	{
-		static constexpr bool is_specialized = true;
-		static constexpr more::fixed16 min()
-		{
-			return more::fixed16::MIN;
-		}
-		static constexpr more::fixed16 max()
-		{
-			return more::fixed16::MAX;
-		}
-		static constexpr more::fixed16 epsilon()
-		{
-			return more::fixed16::from_bits(1);
-		}
 	};
-
-	bool isfinite(more::fixed16)
-	{
-		return false;
-	}
 }
 
 #endif // more_fixed_h
