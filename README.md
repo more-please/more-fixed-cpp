@@ -9,7 +9,8 @@ fractional precision, stored in an `int32_t`. Multiplication and division
 use `int64_t` internally for maximum precision.
 
 My goal is for `fixed` to be usable as a drop-in replacement for `float` in
-existing libraries. I'm currently using it with [Box2D][].
+existing libraries. I'm currently using it with Box2D. It needs a few hacks
+to work properly -- see my fork at https://github.com/more-please/liquidfun.
 
 ## How
 
@@ -65,5 +66,3 @@ Fixed-point _could_ be faster than floating-point on some hardware, even with
 overflow checks, but this is not an explicit goal. It just needs to be fast
 enough for general usage. If you want speed and accuracy, use floats. If you
 want reproducible results, use fixed.
-
-  [Box2D]: https://github.com/more-please/liquidfun
