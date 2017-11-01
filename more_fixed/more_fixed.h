@@ -41,9 +41,7 @@ namespace more
 		{
 			uint32_t carry = uint64_t(repr_with_carry) >> 32;
 			assert(carry == 0 || carry == 0xffffffffu);
-			F result;
-			result._repr = int32_t(repr_with_carry);
-			return result;
+			return from_repr(int32_t(repr_with_carry));
 		}
 
 	public:

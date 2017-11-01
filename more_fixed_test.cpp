@@ -7,17 +7,18 @@ using namespace more;
 
 int main(int argc, const char* argv[])
 {
-	printf("fixed16 range: %d to %d\n", fixed16::MIN, fixed16::MAX);
+	printf(
+		"fixed16 range: %f to %f\n",
+		double(fixed16::limits::max()),
+		double(fixed16::limits::min()));
 
-	printf("half\n");
 	fixed16 half = 0.5f;
+	fixed16 quarter = half * half;
 
-	printf("a\n");
-	fixed16 a = 0.5f * half;
-	printf("b\n");
-	fixed16 b = half * 0.5f;
-	printf("c\n");
-	fixed16 c = half * half;
+	assert(half == 0.5f);
+	assert(half != quarter);
+	assert(quarter == half * 0.5f);
+	assert(quarter == 0.5f * 0.5f);
 
 	printf("All tests passed!\n");
 	return 0;
