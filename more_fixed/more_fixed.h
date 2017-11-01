@@ -258,7 +258,7 @@ namespace more
 #undef MORE_FIXED__OP
 #undef MORE_FIXED__CMP
 
-// -------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Forward math.h functions to class
 
 #define MORE_FIXED__TRIG(TRIG)                                                 \
