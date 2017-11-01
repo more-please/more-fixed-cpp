@@ -37,6 +37,15 @@ namespace more
 			return _repr;
 		}
 
+		static F from_repr64_check(int64_t repr_with_carry)
+		{
+			uint32_t carry = uint64_t(repr_with_carry) >> 32;
+			assert(carry == 0 || carry == 0xffffffffu);
+			F result;
+			result._repr = int32_t(repr_with_carry);
+			return result;
+		}
+
 	public:
 		typedef int32_t repr_t;
 
@@ -99,15 +108,16 @@ namespace more
 		}
 		F operator-() const
 		{
+			assert(_repr != repr_limits::min());
 			return from_repr(-_repr);
 		}
 		F operator+(const F& rhs) const
 		{
-			return from_repr(_repr + rhs._repr);
+			return from_repr64_check(_repr + rhs._repr);
 		}
 		F operator-(const F& rhs) const
 		{
-			return from_repr(_repr - rhs._repr);
+			return from_repr64_check(_repr - rhs._repr);
 		}
 		F operator*(const F& rhs) const
 		{
