@@ -39,19 +39,19 @@ namespace more
 
 		template <typename T> fixed(T value)
 		{
-			if (value > T(limits::max()))
-				value = T(limits::max());
-			if (value < T(limits::min()))
-				value = T(limits::min());
+			T lo = T(limits::min());
+			T hi = T(limits::max());
+			assert(value <= hi);
+			assert(value >= lo);
 			_repr = repr_t(value * SCALE);
 		}
 
 		template <typename T> F& operator=(T value)
 		{
-			if (value > T(limits::max()))
-				value = T(limits::max());
-			if (value < T(limits::min()))
-				value = T(limits::min());
+			T lo = T(limits::min());
+			T hi = T(limits::max());
+			assert(value <= hi);
+			assert(value >= lo);
 			return set_repr(value * SCALE);
 		}
 
