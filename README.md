@@ -23,8 +23,8 @@ usually the results aren't reproducible (different machines or even different
 runs may give different output for identical input). 32-bit fixed-point
 arithmetic should be exactly reproducible on all conventional computers.
 
-In Box2D, for example, this means you can run the same physics calculation on
-two different machines and be sure of getting the same result.
+In Box2D, for example, that would mean you could run the same physics
+calculation on two different machines and be sure of getting the same result.
 
 ## Caveats
 
