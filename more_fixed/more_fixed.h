@@ -190,40 +190,40 @@ namespace more
 
 		static F fabs(const F& f)
 		{
-			return ::fabs(double(f));
+			return ::fabsf(float(f));
 		}
 		static F sin(const F& f)
 		{
-			return ::sin(double(f));
+			return ::sinf(float(f));
 		}
 		static F cos(const F& f)
 		{
-			return ::cos(double(f));
+			return ::cosf(float(f));
 		}
 		static F sqrt(const F& f)
 		{
-			return ::sqrt(double(f));
+			return ::sqrtf(float(f));
 		}
 		static F exp(const F& f)
 		{
-			return ::exp(double(f));
+			return ::expf(float(f));
 		}
 		static F atan2(const F& a, const F& b)
 		{
-			return ::atan2(double(a), double(b));
+			return ::atan2f(float(a), float(b));
 		}
 		static F floor(const F& f)
 		{
-			return ::floor(double(f));
+			return ::floorf(float(f));
 		}
 		static F ceil(const F& f)
 		{
-			return ::ceil(double(f));
+			return ::ceilf(float(f));
 		}
 	};
 
 // -----------------------------------------------------------------------------
-// Implicit conversions for "double (op) fixed16" expressions
+// Implicit conversions for "float (op) fixed16" expressions
 
 #define MORE_FIXED__OP(OP)                                                     \
 	template <typename T, int B> fixed<B> operator OP(T lhs, fixed<B> rhs)     \
