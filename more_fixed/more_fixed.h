@@ -205,32 +205,32 @@ namespace more
 // -----------------------------------------------------------------------------
 // Forward math.h functions to class
 
-#define MORE_FIXED__TRIG(TRIG)                                                 \
-	template <int N> fixed<N> TRIG(fixed<N> f) { return fixed<N>::TRIG(f); }   \
-	template <int N> fixed<N> TRIG##f(fixed<N> f) { return fixed<N>::TRIG(f); }
+#define MORE_FIXED__MATH(MATH)                                                 \
+	template <int N> fixed<N> MATH(fixed<N> f) { return fixed<N>::MATH(f); }   \
+	template <int N> fixed<N> MATH##f(fixed<N> f) { return fixed<N>::MATH(f); }
 
-#define MORE_FIXED__TRIG2(TRIG)                                                \
-	template <int N> fixed<N> TRIG(fixed<N> a, fixed<N> b)                     \
+#define MORE_FIXED__MATH2(MATH)                                                \
+	template <int N> fixed<N> MATH(fixed<N> a, fixed<N> b)                     \
 	{                                                                          \
-		return fixed<N>::TRIG(a, b);                                           \
+		return fixed<N>::MATH(a, b);                                           \
 	}                                                                          \
-	template <int N> fixed<N> TRIG##f(fixed<N> a, fixed<N> b)                  \
+	template <int N> fixed<N> MATH##f(fixed<N> a, fixed<N> b)                  \
 	{                                                                          \
-		return fixed<N>::TRIG(a, b);                                           \
+		return fixed<N>::MATH(a, b);                                           \
 	}
 
-	MORE_FIXED__TRIG(fabs)
-	MORE_FIXED__TRIG(sin)
-	MORE_FIXED__TRIG(cos)
-	MORE_FIXED__TRIG(tan)
-	MORE_FIXED__TRIG2(atan2)
-	MORE_FIXED__TRIG(sqrt)
-	MORE_FIXED__TRIG(exp)
-	MORE_FIXED__TRIG(ceil)
-	MORE_FIXED__TRIG(floor)
+	MORE_FIXED__MATH(fabs)
+	MORE_FIXED__MATH(sin)
+	MORE_FIXED__MATH(cos)
+	MORE_FIXED__MATH(tan)
+	MORE_FIXED__MATH2(atan2)
+	MORE_FIXED__MATH(sqrt)
+	MORE_FIXED__MATH(exp)
+	MORE_FIXED__MATH(ceil)
+	MORE_FIXED__MATH(floor)
 
-#undef MORE_FIXED__TRIG
-#undef MORE_FIXED__TRIG2
+#undef MORE_FIXED__MATH
+#undef MORE_FIXED__MATH2
 
 	// -------------------------------------------------------------------------
 	// Classification functions
