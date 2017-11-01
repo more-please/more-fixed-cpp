@@ -182,6 +182,10 @@ namespace more
 		// ---------------------------------------------------------------------
 		// math.h
 
+		static F fabs(F f)
+		{
+			return ::fabs(double(f));
+		}
 		static F sin(F f)
 		{
 			return ::sin(double(f));
@@ -263,6 +267,7 @@ namespace more
 		return fixed<N>::TRIG(a, b);                                           \
 	}
 
+	MORE_FIXED__TRIG(fabs)
 	MORE_FIXED__TRIG(sin)
 	MORE_FIXED__TRIG(cos)
 	MORE_FIXED__TRIG(tan)
