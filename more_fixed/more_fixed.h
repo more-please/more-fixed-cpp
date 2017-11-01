@@ -32,10 +32,7 @@ namespace more
 
 		typedef fixed F;
 
-		int64_t repr64() const
-		{
-			return _repr;
-		}
+		int64_t repr64() const { return _repr; }
 
 		static F from_repr64_check(int64_t repr_with_carry)
 		{
@@ -79,10 +76,7 @@ namespace more
 		// ---------------------------------------------------------------------
 		// Bitwise accessors
 
-		repr_t repr() const
-		{
-			return _repr;
-		}
+		repr_t repr() const { return _repr; }
 
 		static F from_repr(repr_t repr)
 		{
@@ -100,10 +94,7 @@ namespace more
 		// ---------------------------------------------------------------------
 		// Operators
 
-		F operator+() const
-		{
-			return *this;
-		}
+		F operator+() const { return *this; }
 		F operator-() const
 		{
 			assert(_repr != repr_limits::min());
@@ -125,30 +116,13 @@ namespace more
 		{
 			return from_repr((repr64() * SCALE) / rhs._repr);
 		}
-		bool operator<(const F& rhs) const
-		{
-			return _repr < rhs._repr;
-		}
-		bool operator<=(const F& rhs) const
-		{
-			return _repr <= rhs._repr;
-		}
-		bool operator>(const F& rhs) const
-		{
-			return _repr > rhs._repr;
-		}
-		bool operator>=(const F& rhs) const
-		{
-			return _repr >= rhs._repr;
-		}
-		bool operator==(const F& rhs) const
-		{
-			return _repr == rhs._repr;
-		}
-		bool operator!=(const F& rhs) const
-		{
-			return _repr != rhs._repr;
-		}
+
+		bool operator<(const F& rhs) const { return _repr < rhs._repr; }
+		bool operator<=(const F& rhs) const { return _repr <= rhs._repr; }
+		bool operator>(const F& rhs) const { return _repr > rhs._repr; }
+		bool operator>=(const F& rhs) const { return _repr >= rhs._repr; }
+		bool operator==(const F& rhs) const { return _repr == rhs._repr; }
+		bool operator!=(const F& rhs) const { return _repr != rhs._repr; }
 
 		F& operator+=(const F& rhs)
 		{
@@ -179,55 +153,25 @@ namespace more
 		struct limits
 		{
 			static constexpr bool is_specialized = true;
-			static constexpr F min()
-			{
-				return from_repr(repr_limits::min());
-			}
-			static constexpr F max()
-			{
-				return from_repr(repr_limits::max());
-			}
-			static constexpr F epsilon()
-			{
-				return from_repr(1);
-			}
+			static constexpr F min() { return from_repr(repr_limits::min()); }
+			static constexpr F max() { return from_repr(repr_limits::max()); }
+			static constexpr F epsilon() { return from_repr(1); }
 		};
 
 		// ---------------------------------------------------------------------
 		// math.h
 
-		static F fabs(const F& f)
-		{
-			return ::fabsf(float(f));
-		}
-		static F sin(const F& f)
-		{
-			return ::sinf(float(f));
-		}
-		static F cos(const F& f)
-		{
-			return ::cosf(float(f));
-		}
-		static F sqrt(const F& f)
-		{
-			return ::sqrtf(float(f));
-		}
-		static F exp(const F& f)
-		{
-			return ::expf(float(f));
-		}
+		static F fabs(const F& f) { return ::fabsf(float(f)); }
+		static F sin(const F& f) { return ::sinf(float(f)); }
+		static F cos(const F& f) { return ::cosf(float(f)); }
+		static F sqrt(const F& f) { return ::sqrtf(float(f)); }
+		static F exp(const F& f) { return ::expf(float(f)); }
 		static F atan2(const F& a, const F& b)
 		{
 			return ::atan2f(float(a), float(b));
 		}
-		static F floor(const F& f)
-		{
-			return ::floorf(float(f));
-		}
-		static F ceil(const F& f)
-		{
-			return ::ceilf(float(f));
-		}
+		static F floor(const F& f) { return ::floorf(float(f)); }
+		static F ceil(const F& f) { return ::ceilf(float(f)); }
 	};
 
 // -----------------------------------------------------------------------------
@@ -262,14 +206,8 @@ namespace more
 // Forward math.h functions to class
 
 #define MORE_FIXED__TRIG(TRIG)                                                 \
-	template <int N> fixed<N> TRIG(fixed<N> f)                                 \
-	{                                                                          \
-		return fixed<N>::TRIG(f);                                              \
-	}                                                                          \
-	template <int N> fixed<N> TRIG##f(fixed<N> f)                              \
-	{                                                                          \
-		return fixed<N>::TRIG(f);                                              \
-	}
+	template <int N> fixed<N> TRIG(fixed<N> f) { return fixed<N>::TRIG(f); }   \
+	template <int N> fixed<N> TRIG##f(fixed<N> f) { return fixed<N>::TRIG(f); }
 
 #define MORE_FIXED__TRIG2(TRIG)                                                \
 	template <int N> fixed<N> TRIG(fixed<N> a, fixed<N> b)                     \
@@ -297,22 +235,10 @@ namespace more
 	// -------------------------------------------------------------------------
 	// Classification functions
 
-	template <int N> bool isfinite(fixed<N>)
-	{
-		return true;
-	}
-	template <int N> bool isinf(fixed<N>)
-	{
-		return false;
-	}
-	template <int N> bool isnan(fixed<N>)
-	{
-		return false;
-	}
-	template <int N> bool isnormal(fixed<N> f)
-	{
-		return f.repr() != 0;
-	}
+	template <int N> bool isfinite(fixed<N>) { return true; }
+	template <int N> bool isinf(fixed<N>) { return false; }
+	template <int N> bool isnan(fixed<N>) { return false; }
+	template <int N> bool isnormal(fixed<N> f) { return f.repr() != 0; }
 }
 
 namespace std
