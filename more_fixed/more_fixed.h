@@ -14,6 +14,7 @@ namespace more
 	// Standard formats
 	//
 	// All fixed-point types are currently 32 bits in size.
+	// Multiplication and division is done with 64 bit precision internally.
 	// BITS is the number of fractional bits, so fixed<16> is 16.16 fixed point.
 
 	template <int BITS> struct fixed;
@@ -30,6 +31,11 @@ namespace more
 		static constexpr int SCALE = 1 << BITS;
 
 		typedef fixed F;
+
+		int64_t repr64() const
+		{
+			return _repr;
+		}
 
 	public:
 		typedef int32_t repr_t;
@@ -57,7 +63,10 @@ namespace more
 
 		template <typename T> explicit operator T() const
 		{
-			return T(_repr) / T(SCALE);
+			if (std::numeric_limits<T>::is_integer)
+				return T(_repr / SCALE);
+			else
+				return T(_repr) / T(SCALE);
 		}
 
 		// ---------------------------------------------------------------------
@@ -88,73 +97,70 @@ namespace more
 		{
 			return *this;
 		}
-
 		F operator-() const
 		{
 			return from_repr(-_repr);
 		}
-
-		F operator+(F rhs) const
+		F operator+(const F& rhs) const
 		{
-			return double(*this) + double(rhs);
+			return from_repr(_repr + rhs._repr);
 		}
-		F operator-(F rhs) const
+		F operator-(const F& rhs) const
 		{
-			return double(*this) - double(rhs);
+			return from_repr(_repr - rhs._repr);
 		}
-		F operator*(F rhs) const
+		F operator*(const F& rhs) const
 		{
-			return double(*this) * double(rhs);
+			return from_repr((repr64() * rhs._repr) / SCALE);
 		}
-		F operator/(F rhs) const
+		F operator/(const F& rhs) const
 		{
-			return double(*this) / double(rhs);
+			return from_repr((repr64() * SCALE) / rhs._repr);
 		}
-
-		F& operator+=(F rhs)
-		{
-			*this = double(*this) + double(rhs);
-			return *this;
-		}
-		F& operator-=(F rhs)
-		{
-			*this = double(*this) - double(rhs);
-			return *this;
-		}
-		F& operator*=(F rhs)
-		{
-			*this = double(*this) * double(rhs);
-			return *this;
-		}
-		F& operator/=(F rhs)
-		{
-			*this = double(_repr) / double(rhs._repr);
-			return *this;
-		}
-
-		bool operator<(F rhs) const
+		bool operator<(const F& rhs) const
 		{
 			return _repr < rhs._repr;
 		}
-		bool operator<=(F rhs) const
+		bool operator<=(const F& rhs) const
 		{
 			return _repr <= rhs._repr;
 		}
-		bool operator>(F rhs) const
+		bool operator>(const F& rhs) const
 		{
 			return _repr > rhs._repr;
 		}
-		bool operator>=(F rhs) const
+		bool operator>=(const F& rhs) const
 		{
 			return _repr >= rhs._repr;
 		}
-		bool operator==(F rhs) const
+		bool operator==(const F& rhs) const
 		{
 			return _repr == rhs._repr;
 		}
-		bool operator!=(F rhs) const
+		bool operator!=(const F& rhs) const
 		{
 			return _repr != rhs._repr;
+		}
+
+		F& operator+=(const F& rhs)
+		{
+			*this = *this + rhs;
+			return *this;
+		}
+		F& operator-=(const F& rhs)
+		{
+			*this = *this - rhs;
+			return *this;
+		}
+		F& operator*=(const F& rhs)
+		{
+			*this = *this * rhs;
+			return *this;
+		}
+		F& operator/=(const F& rhs)
+		{
+			*this = *this / rhs;
+			return *this;
 		}
 
 		// ---------------------------------------------------------------------
@@ -182,35 +188,35 @@ namespace more
 		// ---------------------------------------------------------------------
 		// math.h
 
-		static F fabs(F f)
+		static F fabs(const F& f)
 		{
 			return ::fabs(double(f));
 		}
-		static F sin(F f)
+		static F sin(const F& f)
 		{
 			return ::sin(double(f));
 		}
-		static F cos(F f)
+		static F cos(const F& f)
 		{
 			return ::cos(double(f));
 		}
-		static F sqrt(F f)
+		static F sqrt(const F& f)
 		{
 			return ::sqrt(double(f));
 		}
-		static F exp(F f)
+		static F exp(const F& f)
 		{
 			return ::exp(double(f));
 		}
-		static F atan2(F a, F b)
+		static F atan2(const F& a, const F& b)
 		{
 			return ::atan2(double(a), double(b));
 		}
-		static F floor(F f)
+		static F floor(const F& f)
 		{
 			return ::floor(double(f));
 		}
-		static F ceil(F f)
+		static F ceil(const F& f)
 		{
 			return ::ceil(double(f));
 		}
