@@ -14,7 +14,6 @@ namespace more
 	// Standard formats
 	//
 	// All fixed-point types are currently 32 bits in size.
-	// Multiplication and division is done with 64 bit precision internally.
 	// BITS is the number of fractional bits, so fixed<16> is 16.16 fixed point.
 
 	template <int BITS> struct fixed;
@@ -23,6 +22,8 @@ namespace more
 
 	// -------------------------------------------------------------------------
 	// Implementation
+	//
+	// Arithmetic uses 64 bit precision internally. Overflows will assert().
 
 	template <int BITS> struct fixed
 	{
