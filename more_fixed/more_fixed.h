@@ -12,27 +12,18 @@
 namespace more
 {
 	// -------------------------------------------------------------------------
-	// Forward declarations
-
 	// Template for fixed-point values.
+	//
 	// BITS is the number of fractional bits.
 	// ERR is a function to call when overflow is detected.
+
 	template <int BITS, void (*ERR)()> struct fixed;
 
 	// -------------------------------------------------------------------------
 	// Standard formats
-	//
-	// All fixed-point types are currently 32 bits in size.
-	// BITS is the number of fractional bits.
-	// ERR is a function to call on overflow.
 
-	inline void fixed_error_ignore()
-	{
-		// Nothing
-	}
-
+	inline void fixed_error_ignore() {}
 	inline void fixed_error_abort() { abort(); }
-
 	inline void fixed_error_assert()
 	{
 		bool fixed_point_overflow = false;
@@ -51,7 +42,8 @@ namespace more
 	// -------------------------------------------------------------------------
 	// Implementation
 	//
-	// Arithmetic uses 64 bit precision internally. Overflows will check().
+	// All fixed-point types are currently 32 bits in size.
+	// Arithmetic uses 64 bit precision internally.
 
 	template <int BITS, void (*ERR)()> struct fixed
 	{
