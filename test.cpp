@@ -7,10 +7,7 @@ using namespace more;
 
 static int overflows = 0;
 
-void count_overflows()
-{
-	++overflows;
-}
+void count_overflows() { ++overflows; }
 
 typedef more::fixed<16, count_overflows> count16;
 
