@@ -5,43 +5,49 @@ Single-header C++11 fixed-point arithmetic
 ## What
 
 This template `more::fixed<N>` defines a fixed-point value with `N` bits of
-fractional precision, stored in an `int32_t`. Multiplication and division
-use `int64_t` internally for maximum precision.
-
-My goal is for `fixed` to be usable as a drop-in replacement for `float` in
-existing libraries. I'm currently using it with Box2D. It needs a few hacks
-to work properly -- see my fork at https://github.com/more-please/liquidfun.
+fractional precision, stored in an `int32_t`. Arithmetic uses `int64_t`
+internally. Overflow is optionally detected or ignored.
 
 ## How
 
 `#include "more_fixed/more_fixed.h"`
 
+Use `more::fixed16` instead of `float`. If you use a mix of floats and
+fixed-point values in expressions, the floats will be converted implicitly,
+so using float constants is fine.
+
+Here's my Box2D fork that works with fixed-point:
+https://github.com/more-please/liquidfun
+
 ## Why
 
-Floating-point arithmetic is very fast and accurate on modern machines, but
-usually the results aren't reproducible (different machines or even different
-runs may give different output for identical input). 32-bit fixed-point
-arithmetic should be exactly reproducible on all conventional computers.
+Fixed point arithmetic should be exactly reproducible on all conventional
+computers (unlike floating point). In Box2D, for example, that would mean you
+could run the same physics calculation on two different machines and be sure
+of getting identical results.
 
-In Box2D, for example, that would mean you could run the same physics
-calculation on two different machines and be sure of getting the same result.
+## Goals
 
-## Caveats
+- Should be usable as a drop-in replacement for `float` in existing code.
+- No dependencies needed outside of the C++ standard library.
+- Reasonable speed (but aggressive optimization is not a current goal).
+
+---
+
+## More info, caveats
 
 In general, this is still a work in progress, so use with caution. I don't have
-unit tests yet, I'm just doing integration testing (making sure it works in my
-Box2D example).
+exhaustive unit tests yet, I'm just doing ad-hoc integration testing.
 
 ### Overflow
 
-Overflow is currently checked via `assert`. I tried saturating arithmetic but
-found it didn't play well with Box2D -- it would give weird results without
-warning. Better to avoid overflow entirely!
+One of the parameters to the `fixed` template is a function to call when
+overflow is detected. The default `fixed16` typedef calls `assert`, meaning
+it will abort by default but this can be disabled in release builds by
+defining `NDEBUG`.
 
-The "correct" C++ thing to do would be to add an overflow strategy as a template
-parameter. I haven't decided on that yet; I feel it complicates the code a lot
-for something that may or may not actually be useful. `assert` is working for
-my purposes right now.
+The `fixed16_safe` type always aborts, and the `fixed16_fast` type always
+ignores overflow.
 
 ### Reproducibility
 
@@ -53,16 +59,17 @@ if it always results in higher-precision results that are then truncated to
 `fixed`. (Probably it needs to be `double` rather than `float`, single
 precision doesn't have a full 32-bit mantissa.)
 
+### Speed
+
+Fixed-point _could_ be faster than floating-point on some hardware, even with
+overflow checks, but this is not an explicit goal. I just want it to be fast
+enough general usage; no more than 2x slower than float, say. If you want
+speed and accuracy, use floats. If you want reproducible results, use fixed.
+
+On x86_64, `fixed16_fast` seems to be about the same speed as `float`, while
+`fixed16_safe` is 1.5x--2x slower.
+
 ### Build system
 
 I'm using Clang with C++11 support. Other than fixing as many warnings as
 possible, I haven't put any special effort into making the code portable.
-
-## Non-goals
-
-### Speed
-
-Fixed-point _could_ be faster than floating-point on some hardware, even with
-overflow checks, but this is not an explicit goal. It just needs to be fast
-enough for general usage. If you want speed and accuracy, use floats. If you
-want reproducible results, use fixed.
