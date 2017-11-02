@@ -110,11 +110,11 @@ namespace more
 		}
 		F operator*(const F& rhs) const
 		{
-			return from_repr((repr64() * rhs._repr) / SCALE);
+			return from_repr64_check((repr64() * rhs._repr) / SCALE);
 		}
 		F operator/(const F& rhs) const
 		{
-			return from_repr((repr64() * SCALE) / rhs._repr);
+			return from_repr64_check((repr64() * SCALE) / rhs._repr);
 		}
 
 		bool operator<(const F& rhs) const { return _repr < rhs._repr; }
