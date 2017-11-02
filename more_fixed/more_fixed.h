@@ -5,11 +5,20 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <limits>
 
 namespace more
 {
+	// -------------------------------------------------------------------------
+	// Forward declarations
+
+	// Template for fixed-point values.
+	// BITS is the number of fractional bits.
+	// ERR is a function to call when overflow is detected.
+	template <int BITS, void (*ERR)()> struct fixed;
+
 	// -------------------------------------------------------------------------
 	// Standard formats
 	//
@@ -17,26 +26,34 @@ namespace more
 	// BITS is the number of fractional bits.
 	// ERR is a function to call on overflow.
 
-	typedef void (*fixed_error_func)();
-
-	inline void fixed_abort_in_debug()
+	inline void fixed_error_ignore()
 	{
-#ifdef NDEBUG
-		abort();
-#endif
+		// Nothing
 	}
 
-	template <int BITS, fixed_error_func ERR = fixed_abort_in_debug>
-	struct fixed;
+	inline void fixed_error_abort() { abort(); }
 
-	typedef fixed<16> fixed16;
+	inline void fixed_error_assert()
+	{
+		bool fixed_point_overflow = false;
+		assert(fixed_point_overflow);
+	}
+
+	// Fastest option: always ignore overflow.
+	typedef fixed<16, fixed_error_ignore> fixed16_fast;
+
+	// Safest option: always abort on overflow.
+	typedef fixed<16, fixed_error_abort> fixed16_safe;
+
+	// Default: use assert() so overflow checks can be easily disabled.
+	typedef fixed<16, fixed_error_assert> fixed16;
 
 	// -------------------------------------------------------------------------
 	// Implementation
 	//
 	// Arithmetic uses 64 bit precision internally. Overflows will check().
 
-	template <int BITS, fixed_error_func ERR> struct fixed
+	template <int BITS, void (*ERR)()> struct fixed
 	{
 		static_assert(BITS >= 0, "Can't have negative fractional bits");
 		static_assert(BITS <= 32, "Can't have more than 32 fractional bits");
@@ -198,14 +215,14 @@ namespace more
 // Implicit conversions for "float (op) fixed16" expressions
 
 #define MORE_FIXED__OP(OP)                                                     \
-	template <typename T, int B, fixed_error_func E>                           \
+	template <typename T, int B, void (*E)()>                                  \
 	fixed<B, E> operator OP(T lhs, fixed<B, E> rhs)                            \
 	{                                                                          \
 		return fixed<B, E>(lhs) OP rhs;                                        \
 	}
 
 #define MORE_FIXED__CMP(CMP)                                                   \
-	template <typename T, int B, fixed_error_func E>                           \
+	template <typename T, int B, void (*E)()>                                  \
 	bool operator CMP(T lhs, fixed<B, E> rhs)                                  \
 	{                                                                          \
 		return fixed<B, E>(lhs) CMP rhs;                                       \
@@ -228,22 +245,22 @@ namespace more
 // Forward math.h functions to class
 
 #define MORE_FIXED__MATH(MATH)                                                 \
-	template <int B, fixed_error_func E> fixed<B, E> MATH(fixed<B, E> f)       \
+	template <int B, void (*E)()> fixed<B, E> MATH(fixed<B, E> f)              \
 	{                                                                          \
 		return fixed<B, E>::MATH(f);                                           \
 	}                                                                          \
-	template <int B, fixed_error_func E> fixed<B, E> MATH##f(fixed<B, E> f)    \
+	template <int B, void (*E)()> fixed<B, E> MATH##f(fixed<B, E> f)           \
 	{                                                                          \
 		return fixed<B, E>::MATH(f);                                           \
 	}
 
 #define MORE_FIXED__MATH2(MATH)                                                \
-	template <int B, fixed_error_func E>                                       \
+	template <int B, void (*E)()>                                              \
 	fixed<B, E> MATH(fixed<B, E> a, fixed<B, E> b)                             \
 	{                                                                          \
 		return fixed<B, E>::MATH(a, b);                                        \
 	}                                                                          \
-	template <int B, fixed_error_func E>                                       \
+	template <int B, void (*E)()>                                              \
 	fixed<B, E> MATH##f(fixed<B, E> a, fixed<B, E> b)                          \
 	{                                                                          \
 		return fixed<B, E>::MATH(a, b);                                        \
@@ -265,19 +282,10 @@ namespace more
 	// -------------------------------------------------------------------------
 	// Classification functions
 
-	template <int B, fixed_error_func E> bool isfinite(fixed<B, E>)
-	{
-		return true;
-	}
-	template <int B, fixed_error_func E> bool isinf(fixed<B, E>)
-	{
-		return false;
-	}
-	template <int B, fixed_error_func E> bool isnan(fixed<B, E>)
-	{
-		return false;
-	}
-	template <int B, fixed_error_func E> bool isnormal(fixed<B, E> f)
+	template <int B, void (*E)()> bool isfinite(fixed<B, E>) { return true; }
+	template <int B, void (*E)()> bool isinf(fixed<B, E>) { return false; }
+	template <int B, void (*E)()> bool isnan(fixed<B, E>) { return false; }
+	template <int B, void (*E)()> bool isnormal(fixed<B, E> f)
 	{
 		return f.repr() != 0;
 	}
