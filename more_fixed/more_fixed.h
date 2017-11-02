@@ -14,19 +14,33 @@ namespace more
 	// Standard formats
 	//
 	// All fixed-point types are currently 32 bits in size.
-	// BITS is the number of fractional bits, so fixed<16> is 16.16 fixed point.
+	// BITS is the number of fractional bits.
+	// ERR is a function to call on overflow.
 
-	template <int BITS> struct fixed;
+	typedef void (*fixed_error_func)();
+
+	inline void fixed_abort_in_debug()
+	{
+#ifdef NDEBUG
+		abort();
+#endif
+	}
+
+	template <int BITS, fixed_error_func ERR = fixed_abort_in_debug>
+	struct fixed;
 
 	typedef fixed<16> fixed16;
 
 	// -------------------------------------------------------------------------
 	// Implementation
 	//
-	// Arithmetic uses 64 bit precision internally. Overflows will assert().
+	// Arithmetic uses 64 bit precision internally. Overflows will check().
 
-	template <int BITS> struct fixed
+	template <int BITS, fixed_error_func ERR> struct fixed
 	{
+		static_assert(BITS >= 0, "Can't have negative fractional bits");
+		static_assert(BITS <= 32, "Can't have more than 32 fractional bits");
+
 		int32_t _repr;
 
 		static constexpr int SCALE = 1 << BITS;
@@ -37,9 +51,14 @@ namespace more
 
 		static F from_repr64_check(int64_t repr_with_carry)
 		{
-			uint32_t carry = uint64_t(repr_with_carry) >> 32;
-			assert(carry == 0 || carry == 0xffffffffu);
+			int64_t carry = repr_with_carry >> 31;
+			check(carry == 0 || carry == -1);
 			return from_repr(int32_t(repr_with_carry));
+		}
+
+		static void check(bool condition)
+		{
+			if (!condition) ERR();
 		}
 
 	public:
@@ -52,8 +71,8 @@ namespace more
 		{
 			T lo = T(limits::min());
 			T hi = T(limits::max());
-			assert(value <= hi);
-			assert(value >= lo);
+			check(value <= hi);
+			check(value >= lo);
 			_repr = repr_t(value * SCALE);
 		}
 
@@ -61,8 +80,8 @@ namespace more
 		{
 			T lo = T(limits::min());
 			T hi = T(limits::max());
-			assert(value <= hi);
-			assert(value >= lo);
+			check(value <= hi);
+			check(value >= lo);
 			return set_repr(value * SCALE);
 		}
 
@@ -98,16 +117,16 @@ namespace more
 		F operator+() const { return *this; }
 		F operator-() const
 		{
-			assert(_repr != repr_limits::min());
+			check(_repr != repr_limits::min());
 			return from_repr(-_repr);
 		}
 		F operator+(const F& rhs) const
 		{
-			return from_repr64_check(_repr + rhs._repr);
+			return from_repr64_check(repr64() + rhs._repr);
 		}
 		F operator-(const F& rhs) const
 		{
-			return from_repr64_check(_repr - rhs._repr);
+			return from_repr64_check(repr64() - rhs._repr);
 		}
 		F operator*(const F& rhs) const
 		{
@@ -179,15 +198,17 @@ namespace more
 // Implicit conversions for "float (op) fixed16" expressions
 
 #define MORE_FIXED__OP(OP)                                                     \
-	template <typename T, int B> fixed<B> operator OP(T lhs, fixed<B> rhs)     \
+	template <typename T, int B, fixed_error_func E>                           \
+	fixed<B, E> operator OP(T lhs, fixed<B, E> rhs)                            \
 	{                                                                          \
-		return fixed<B>(lhs) OP rhs;                                           \
+		return fixed<B, E>(lhs) OP rhs;                                        \
 	}
 
 #define MORE_FIXED__CMP(CMP)                                                   \
-	template <typename T, int B> bool operator CMP(T lhs, fixed<B> rhs)        \
+	template <typename T, int B, fixed_error_func E>                           \
+	bool operator CMP(T lhs, fixed<B, E> rhs)                                  \
 	{                                                                          \
-		return fixed<B>(lhs) CMP rhs;                                          \
+		return fixed<B, E>(lhs) CMP rhs;                                       \
 	}
 
 	MORE_FIXED__OP(+)
@@ -207,17 +228,25 @@ namespace more
 // Forward math.h functions to class
 
 #define MORE_FIXED__MATH(MATH)                                                 \
-	template <int N> fixed<N> MATH(fixed<N> f) { return fixed<N>::MATH(f); }   \
-	template <int N> fixed<N> MATH##f(fixed<N> f) { return fixed<N>::MATH(f); }
+	template <int B, fixed_error_func E> fixed<B, E> MATH(fixed<B, E> f)       \
+	{                                                                          \
+		return fixed<B, E>::MATH(f);                                           \
+	}                                                                          \
+	template <int B, fixed_error_func E> fixed<B, E> MATH##f(fixed<B, E> f)    \
+	{                                                                          \
+		return fixed<B, E>::MATH(f);                                           \
+	}
 
 #define MORE_FIXED__MATH2(MATH)                                                \
-	template <int N> fixed<N> MATH(fixed<N> a, fixed<N> b)                     \
+	template <int B, fixed_error_func E>                                       \
+	fixed<B, E> MATH(fixed<B, E> a, fixed<B, E> b)                             \
 	{                                                                          \
-		return fixed<N>::MATH(a, b);                                           \
+		return fixed<B, E>::MATH(a, b);                                        \
 	}                                                                          \
-	template <int N> fixed<N> MATH##f(fixed<N> a, fixed<N> b)                  \
+	template <int B, fixed_error_func E>                                       \
+	fixed<B, E> MATH##f(fixed<B, E> a, fixed<B, E> b)                          \
 	{                                                                          \
-		return fixed<N>::MATH(a, b);                                           \
+		return fixed<B, E>::MATH(a, b);                                        \
 	}
 
 	MORE_FIXED__MATH(fabs)
@@ -236,10 +265,22 @@ namespace more
 	// -------------------------------------------------------------------------
 	// Classification functions
 
-	template <int N> bool isfinite(fixed<N>) { return true; }
-	template <int N> bool isinf(fixed<N>) { return false; }
-	template <int N> bool isnan(fixed<N>) { return false; }
-	template <int N> bool isnormal(fixed<N> f) { return f.repr() != 0; }
+	template <int B, fixed_error_func E> bool isfinite(fixed<B, E>)
+	{
+		return true;
+	}
+	template <int B, fixed_error_func E> bool isinf(fixed<B, E>)
+	{
+		return false;
+	}
+	template <int B, fixed_error_func E> bool isnan(fixed<B, E>)
+	{
+		return false;
+	}
+	template <int B, fixed_error_func E> bool isnormal(fixed<B, E> f)
+	{
+		return f.repr() != 0;
+	}
 }
 
 namespace std
