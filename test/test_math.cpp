@@ -283,8 +283,9 @@ void run_tests_worker(int step)
 		FB2(N, 27), FB2(N, 28), FB2(N, 29), FB2(N, 30)
 
 deque<Test*> _tests{
-	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc), FUNC(sqrt),   FUNC(sin),
-	FUNC(cos),  FUNC(tan),   FUNC(exp),  FUNC2(fmod), FUNC2(atan2),
+	FUNC(sqrt),
+// 	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc), FUNC(sqrt),   FUNC(sin),
+// 	FUNC(cos),  FUNC(tan),   FUNC(exp),  FUNC2(fmod), FUNC2(atan2),
 };
 
 const int _num_tests = _tests.size();
