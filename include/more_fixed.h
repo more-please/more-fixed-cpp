@@ -53,12 +53,13 @@ namespace more
 		int32_t _repr;
 
 		static constexpr int SCALE = 1 << BITS;
+		static constexpr int32_t MASK = SCALE - 1;
 
 		typedef fixed F;
 
 		int64_t repr64() const { return _repr; }
 
-		static F from_repr64_check(int64_t repr_with_carry)
+		static F from_repr64(int64_t repr_with_carry)
 		{
 			int64_t carry = repr_with_carry >> 31;
 			check(carry == 0 || carry == -1);
@@ -78,6 +79,7 @@ namespace more
 
 		template <typename T> fixed(T value)
 		{
+			check(isfinite(value));
 			T lo = T(limits::min());
 			T hi = T(limits::max());
 			check(value <= hi);
@@ -131,19 +133,19 @@ namespace more
 		}
 		F operator+(const F& rhs) const
 		{
-			return from_repr64_check(repr64() + rhs._repr);
+			return from_repr64(repr64() + rhs._repr);
 		}
 		F operator-(const F& rhs) const
 		{
-			return from_repr64_check(repr64() - rhs._repr);
+			return from_repr64(repr64() - rhs._repr);
 		}
 		F operator*(const F& rhs) const
 		{
-			return from_repr64_check((repr64() * rhs._repr) / SCALE);
+			return from_repr64((repr64() * rhs._repr) / SCALE);
 		}
 		F operator/(const F& rhs) const
 		{
-			return from_repr64_check((repr64() * SCALE) / rhs._repr);
+			return from_repr64((repr64() * SCALE) / rhs._repr);
 		}
 
 		bool operator<(const F& rhs) const { return _repr < rhs._repr; }
@@ -190,17 +192,17 @@ namespace more
 		// ---------------------------------------------------------------------
 		// math.h
 
-		static F fabs(const F& f) { return ::fabsf(float(f)); }
-		static F sin(const F& f) { return ::sinf(float(f)); }
-		static F cos(const F& f) { return ::cosf(float(f)); }
-		static F sqrt(const F& f) { return ::sqrtf(float(f)); }
-		static F exp(const F& f) { return ::expf(float(f)); }
-		static F atan2(const F& a, const F& b)
-		{
-			return ::atan2f(float(a), float(b));
-		}
-		static F floor(const F& f) { return ::floorf(float(f)); }
-		static F ceil(const F& f) { return ::ceilf(float(f)); }
+		static F fabs(F f) { return (f < 0) ? -f : f; }
+		static F floor(F f) { return from_repr(f._repr & ~MASK); }
+		static F ceil(F f) { return from_repr64((f.repr64() + MASK) & ~MASK); }
+		static F trunc(F f) { return (f < 0) ? ceil(f) : floor(f); }
+
+		static F sqrt(F f) { return ::sqrt(double(f)); }
+		static F sin(F f) { return ::sin(double(f)); }
+		static F cos(F f) { return ::cos(double(f)); }
+		static F tan(F f) { return ::tan(double(f)); }
+		static F exp(F f) { return ::exp(double(f)); }
+		static F atan2(F a, F b) { return ::atan2(double(a), double(b)); }
 	};
 
 // -----------------------------------------------------------------------------
