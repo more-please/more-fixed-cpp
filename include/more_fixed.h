@@ -197,7 +197,19 @@ namespace more
 		static F ceil(F f) { return from_repr64((f.repr64() + MASK) & ~MASK); }
 		static F trunc(F f) { return (f < 0) ? ceil(f) : floor(f); }
 
-		static F sqrt(F f) { return ::sqrt(double(f)); }
+		static F sqrt(F f)
+		{
+			check(f >= 0);
+			int64_t target = f.repr64() << BITS;
+			int64_t root = 0;
+			constexpr int MAX_BIT = BITS + (30 - BITS) / 2;
+			for (int i = MAX_BIT; i >= 0; --i) {
+				int64_t guess = root | (1 << i);
+				if (guess * guess <= target) root = guess;
+			}
+			return from_repr(root);
+		}
+
 		static F sin(F f) { return ::sin(double(f)); }
 		static F cos(F f) { return ::cos(double(f)); }
 		static F tan(F f) { return ::tan(double(f)); }
