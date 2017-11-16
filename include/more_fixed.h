@@ -225,8 +225,60 @@ namespace more
 			return from_repr(a._repr % b._repr);
 		}
 
+		static F pi() { return M_PI; }
+		static F pi_2() { return M_PI_2; }
+
+#if 0
 		static F sin(F f) { return ::sin(double(f)); }
+#else
+		static F sin(F f)
+		{
+			const F p = F::pi_2();
+			const int32_t n = f._repr / p._repr;
+			F x = F::from_repr(f._repr - n * p._repr);
+			switch (n % 4) {
+				case -3: x = p + x; break;
+				case -2: x = -x; break;
+				case -1: x = -(p + x); break;
+				case 1: x = p - x; break;
+				case 2: x = -x; break;
+				case 3: x = x - p; break;
+				default: break;
+			}
+			F x2 = x * x;
+			F x3 = x2 * x;
+			F x5 = x2 * x3;
+			F x7 = x2 * x5;
+			F result = x - (840 * x3 - 42 * x5 + x7) / 5040;
+			return result;
+		}
+#endif
+
+#if 0
 		static F cos(F f) { return ::cos(double(f)); }
+#else
+		static F cos(F f)
+		{
+			const F p = F::pi_2();
+			const int32_t n = f._repr / p._repr;
+			F x = F::from_repr(f._repr - n * p._repr);
+			switch (n % 4) {
+				case -3: x = p + x; break;
+				case -2: x = -x; break;
+				case -1: x = -(p + x); break;
+				case 1: x = p - x; break;
+				case 2: x = -x; break;
+				case 3: x = x - p; break;
+				default: break;
+			}
+			F x2 = x * x;
+			F x4 = x2 * x2;
+			F x6 = x4 * x2;
+			F result = 1 - (360 * x2 - 30 * x4 + x6) / 720;
+			return result;
+		}
+#endif
+
 		static F tan(F f) { return ::tan(double(f)); }
 		static F exp(F f) { return ::exp(double(f)); }
 

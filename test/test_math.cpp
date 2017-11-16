@@ -73,7 +73,14 @@ struct TestFunc : public Test
 
 	virtual bool test_all(int step)
 	{
+#if 1
+		bool ok = true;
+		for (double x = 0; x < M_PI_2; x += 0.1) {
+			ok = ok && test(x);
+		}
+#else
 		bool ok = test(0);
+
 		int32_t i;
 		for (i = 0; ok && i < 4; ++i) {
 			ok = ok && test_repr(INT32_MIN + i);
@@ -86,6 +93,8 @@ struct TestFunc : public Test
 		for (i = INT32_MIN + step; ok && i < INT32_MAX - step; i += step) {
 			ok = ok && test_repr(i);
 		}
+#endif
+
 		print("%s", ok ? "ok" : "FAILED");
 		return ok;
 	}
@@ -283,8 +292,9 @@ void run_tests_worker(int step)
 		FB2(N, 27), FB2(N, 28), FB2(N, 29), FB2(N, 30)
 
 deque<Test*> _tests{
-	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc), FUNC(sqrt),   FUNC(sin),
-	FUNC(cos),  FUNC(tan),   FUNC(exp),  FUNC2(fmod), FUNC2(atan2),
+	FUNC(sin), FUNC(cos),
+// 	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc), FUNC(sqrt),   FUNC(sin),
+// 	FUNC(cos),  FUNC(tan),   FUNC(exp),  FUNC2(fmod), FUNC2(atan2),
 };
 
 const int _num_tests = _tests.size();
