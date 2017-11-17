@@ -31,9 +31,6 @@ bool get_overflow()
 
 struct Test
 {
-	virtual const char* name() const = 0;
-	virtual int bits() const = 0;
-
 	// Return true on success
 	virtual bool test_all(int step) = 0;
 
@@ -47,9 +44,6 @@ template <
 struct FuncTest : public Test
 {
 	FuncTest(const char* name, mutex& mutex) : _name(name), _mutex(mutex) {}
-
-	virtual const char* name() const { return _name; }
-	virtual int bits() const { return BITS; }
 
 	virtual bool test_all(int step)
 	{
