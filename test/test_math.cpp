@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,13 +13,14 @@
 
 #include "../include/more_fixed.h"
 
+using namespace more;
 using namespace std;
 
 // -----------------------------------------------------------------------------
 
 thread_local bool _overflow = false;
 
-void raise_overflow() { _overflow = true; }
+void overflow() { _overflow = true; }
 
 bool get_overflow()
 {
@@ -31,24 +33,42 @@ bool get_overflow()
 
 struct Test
 {
+	Test(const char* name, int bits, mutex& mutex)
+		: _name(name), _bits(bits), _mutex(mutex)
+	{}
+
+	virtual ~Test() = default;
+
 	// Return true on success
 	virtual bool test_all(int step) = 0;
 
-	virtual ~Test() = default;
+	void print(const char* format, ...)
+	{
+		unique_lock<mutex> lock(_mutex);
+		printf("%8s.%02d: ", _name, _bits);
+
+		va_list args;
+		va_start(args, format);
+		vprintf(format, args);
+		va_end(args);
+
+		putchar('\n');
+	}
+
+private:
+	const char* _name;
+	int _bits;
+	mutex& _mutex;
 };
 
-template <
-	int BITS,
-	double (*DFUNC)(double),
-	more::fixed<BITS, raise_overflow> (*FFUNC)(more::fixed<BITS, raise_overflow>)>
-struct FuncTest : public Test
+template <typename FIXED, double (*DFUNC)(double), FIXED (*FFUNC)(FIXED)>
+struct TestFunc : public Test
 {
-	FuncTest(const char* name, mutex& mutex) : _name(name), _mutex(mutex) {}
+	TestFunc(const char* name, mutex& mutex) : Test(name, FIXED::BITS, mutex) {}
 
 	virtual bool test_all(int step)
 	{
 		bool ok = test(0);
-
 		int32_t i;
 		for (i = 0; ok && i < 4; ++i) {
 			ok = ok && test_repr(INT32_MIN + i);
@@ -61,21 +81,14 @@ struct FuncTest : public Test
 		for (i = INT32_MIN + step; ok && i < INT32_MAX - step; i += step) {
 			ok = ok && test_repr(i);
 		}
-
-		unique_lock<mutex> lock(_mutex);
-		printf("%8s.%02d: %s\n", _name, BITS, ok ? "ok" : "FAILED");
+		print("%s", ok ? "ok" : "FAILED");
 		return ok;
 	}
 
 private:
-	const char* _name;
-	mutex& _mutex;
+	bool test_repr(int32_t repr) { return test(FIXED::from_repr(repr)); }
 
-	typedef more::fixed<BITS, raise_overflow> fixed;
-
-	bool test_repr(int32_t repr) { return test(fixed::from_repr(repr)); }
-
-	bool test(fixed fval)
+	bool test(FIXED fval)
 	{
 		const double nan = numeric_limits<double>::quiet_NaN();
 		const double dval = double(fval);
@@ -84,17 +97,17 @@ private:
 		int overflow = 0;
 		get_overflow();
 
-		fixed fexpected = fixed(exact);
+		FIXED fexpected = FIXED(exact);
 		if (get_overflow()) ++overflow;
 
-		fixed factual = FFUNC(fval);
+		FIXED factual = FFUNC(fval);
 		if (get_overflow()) ++overflow;
 
 		int err = factual.repr() - fexpected.repr();
 
 		if (overflow) {
 			if (overflow != 2) {
-				double expected = double(fixed(exact));
+				double expected = double(FIXED(exact));
 				if (get_overflow()) expected = nan;
 
 				double actual = double(FFUNC(fval));
@@ -115,31 +128,21 @@ private:
 
 	void log_error(double val, double expected, double actual)
 	{
-		unique_lock<mutex> lock(_mutex);
-		printf(
-			"%8s.%02d: %13.6f: expected %13.6f, got %13.6f\n",
-			_name,
-			BITS,
-			val,
-			expected,
-			actual);
+		print("%13.6f: expected %13.6f, got %13.6f", val, expected, actual);
 	}
 };
 
 // -----------------------------------------------------------------------------
 
-#define FB(NAME, BITS)                                                         \
-	new FuncTest<BITS, ::NAME, more::fixed<BITS, raise_overflow>::NAME>(       \
-		#NAME, _mutex)
+#define FB(N, B)                                                               \
+	new TestFunc<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
 
-#define FUNC(NAME)                                                             \
-	FB(NAME, 0), FB(NAME, 1), FB(NAME, 2), FB(NAME, 3), FB(NAME, 4),           \
-		FB(NAME, 5), FB(NAME, 6), FB(NAME, 7), FB(NAME, 8), FB(NAME, 9),       \
-		FB(NAME, 10), FB(NAME, 11), FB(NAME, 12), FB(NAME, 13), FB(NAME, 14),  \
-		FB(NAME, 15), FB(NAME, 16), FB(NAME, 17), FB(NAME, 18), FB(NAME, 19),  \
-		FB(NAME, 20), FB(NAME, 21), FB(NAME, 22), FB(NAME, 23), FB(NAME, 24),  \
-		FB(NAME, 25), FB(NAME, 26), FB(NAME, 27), FB(NAME, 28), FB(NAME, 29),  \
-		FB(NAME, 30)
+#define FUNC(N)                                                                \
+	FB(N, 0), FB(N, 1), FB(N, 2), FB(N, 3), FB(N, 4), FB(N, 5), FB(N, 6),      \
+		FB(N, 7), FB(N, 8), FB(N, 9), FB(N, 10), FB(N, 11), FB(N, 12),         \
+		FB(N, 13), FB(N, 14), FB(N, 15), FB(N, 16), FB(N, 17), FB(N, 18),      \
+		FB(N, 19), FB(N, 20), FB(N, 21), FB(N, 22), FB(N, 23), FB(N, 24),      \
+		FB(N, 25), FB(N, 26), FB(N, 27), FB(N, 28), FB(N, 29), FB(N, 30)
 
 mutex _mutex{};
 condition_variable _cond{};

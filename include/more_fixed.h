@@ -45,15 +45,17 @@ namespace more
 	// All fixed-point types are currently 32 bits in size.
 	// Arithmetic uses 64 bit precision internally.
 
-	template <int BITS, void (*ERR)()> struct fixed
+	template <int _BITS, void (*_ERR)()> struct fixed
 	{
+		static constexpr void (*ERR)() = _ERR;
+		static constexpr int BITS = _BITS;
+		static constexpr int SCALE = 1 << BITS;
+		static constexpr int32_t MASK = SCALE - 1;
+
 		static_assert(BITS >= 0, "Can't have negative fractional bits");
 		static_assert(BITS <= 32, "Can't have more than 32 fractional bits");
 
 		int32_t _repr;
-
-		static constexpr int SCALE = 1 << BITS;
-		static constexpr int32_t MASK = SCALE - 1;
 
 		typedef fixed F;
 
