@@ -216,6 +216,8 @@ namespace more
 		static F cos(F f) { return ::cos(double(f)); }
 		static F tan(F f) { return ::tan(double(f)); }
 		static F exp(F f) { return ::exp(double(f)); }
+
+		static F fmod(F a, F b) { return ::fmod(double(a), double(b)); }
 		static F atan2(F a, F b) { return ::atan2(double(a), double(b)); }
 	};
 
@@ -275,14 +277,16 @@ namespace more
 	}
 
 	MORE_FIXED__MATH(fabs)
+	MORE_FIXED__MATH(ceil)
+	MORE_FIXED__MATH(floor)
+	MORE_FIXED__MATH(trunc)
 	MORE_FIXED__MATH(sin)
 	MORE_FIXED__MATH(cos)
 	MORE_FIXED__MATH(tan)
-	MORE_FIXED__MATH2(atan2)
 	MORE_FIXED__MATH(sqrt)
 	MORE_FIXED__MATH(exp)
-	MORE_FIXED__MATH(ceil)
-	MORE_FIXED__MATH(floor)
+	MORE_FIXED__MATH2(fmod)
+	MORE_FIXED__MATH2(atan2)
 
 #undef MORE_FIXED__MATH
 #undef MORE_FIXED__MATH2

@@ -17,19 +17,7 @@ using namespace more;
 using namespace std;
 
 // -----------------------------------------------------------------------------
-
-thread_local bool _overflow = false;
-
-void overflow() { _overflow = true; }
-
-bool get_overflow()
-{
-	bool result = _overflow;
-	_overflow = false;
-	return result;
-}
-
-// -----------------------------------------------------------------------------
+// Base class for tests
 
 struct Test
 {
@@ -60,6 +48,23 @@ private:
 	int _bits;
 	mutex& _mutex;
 };
+
+// -----------------------------------------------------------------------------
+// Overflow detector
+
+thread_local bool _overflow = false;
+
+void overflow() { _overflow = true; }
+
+bool get_overflow()
+{
+	bool result = _overflow;
+	_overflow = false;
+	return result;
+}
+
+// -----------------------------------------------------------------------------
+// Test implementation for unary functions
 
 template <typename FIXED, double (*DFUNC)(double), FIXED (*FFUNC)(FIXED)>
 struct TestFunc : public Test
@@ -128,34 +133,102 @@ private:
 
 	void log_error(double val, double expected, double actual)
 	{
-		print("%13.6f: expected %13.6f, got %13.6f", val, expected, actual);
+		print("%f: expected %f, got %f", val, expected, actual);
 	}
 };
 
 // -----------------------------------------------------------------------------
+// Test implementation for binary functions
 
-#define FB(N, B)                                                               \
-	new TestFunc<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
+template <typename FIXED, double (*DFUNC)(double, double), FIXED (*FFUNC)(FIXED, FIXED)>
+struct TestFunc2 : public Test
+{
+	TestFunc2(const char* name, mutex& mutex) : Test(name, FIXED::BITS, mutex)
+	{}
 
-#define FUNC(N)                                                                \
-	FB(N, 0), FB(N, 1), FB(N, 2), FB(N, 3), FB(N, 4), FB(N, 5), FB(N, 6),      \
-		FB(N, 7), FB(N, 8), FB(N, 9), FB(N, 10), FB(N, 11), FB(N, 12),         \
-		FB(N, 13), FB(N, 14), FB(N, 15), FB(N, 16), FB(N, 17), FB(N, 18),      \
-		FB(N, 19), FB(N, 20), FB(N, 21), FB(N, 22), FB(N, 23), FB(N, 24),      \
-		FB(N, 25), FB(N, 26), FB(N, 27), FB(N, 28), FB(N, 29), FB(N, 30)
+	virtual bool test_all(int step)
+	{
+		bool ok = test(0);
+		int32_t i;
+		for (i = 0; ok && i < 4; ++i) {
+			ok = ok && test_repr(INT32_MIN + i);
+			ok = ok && test_repr(INT32_MAX - i);
+			ok = ok && test_repr(i + 1);
+			ok = ok && test_repr(-i - 1);
+			ok = ok && test(i + 1);
+			ok = ok && test(-i - 1);
+		}
+		for (i = INT32_MIN + step; ok && i < INT32_MAX - step; i += step) {
+			ok = ok && test_repr(i);
+		}
+		print("%s", ok ? "ok" : "FAILED");
+		return ok;
+	}
+
+private:
+	bool test_repr(int32_t a) { return test_repr(a, a); }
+
+	bool test_repr(int32_t a, int32_t b)
+	{
+		return test(FIXED::from_repr(a), FIXED::from_repr(b));
+	}
+
+	bool test(FIXED a) { return test(a, a); }
+
+	bool test(FIXED fa, FIXED fb)
+	{
+		const double nan = numeric_limits<double>::quiet_NaN();
+		const double da = double(fa);
+		const double db = double(fb);
+		const double exact = DFUNC(da, db);
+
+		int overflow = 0;
+		get_overflow();
+
+		FIXED fexpected = FIXED(exact);
+		if (get_overflow()) ++overflow;
+
+		FIXED factual = FFUNC(fa, fb);
+		if (get_overflow()) ++overflow;
+
+		int err = factual.repr() - fexpected.repr();
+
+		if (overflow) {
+			if (overflow != 2) {
+				double expected = double(FIXED(exact));
+				if (get_overflow()) expected = nan;
+
+				double actual = double(FFUNC(fa, fb));
+				if (get_overflow()) actual = nan;
+
+				log_error(da, db, expected, actual);
+				return false;
+			}
+		}
+		else if (abs(err) > 1)
+		{
+			log_error(da, db, double(fexpected), double(factual));
+			return false;
+		}
+
+		return true;
+	}
+
+	void log_error(double a, double b, double expected, double actual)
+	{
+		print("%f, %f: expected %f, got %f", a, b, expected, actual);
+	}
+};
+
+// -----------------------------------------------------------------------------
+// Test runner - pulls tests from the queue, designed to work in a thread pool
 
 mutex _mutex{};
 condition_variable _cond{};
 int _finished = 0;
 bool _failed = false;
 
-deque<Test*> _tests{
-	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc),
-
-	FUNC(sqrt), FUNC(sin),   FUNC(cos),  FUNC(tan),   FUNC(exp),
-};
-
-const int _num_tests = _tests.size();
+extern deque<Test*> _tests;
 
 Test* get_test()
 {
@@ -181,6 +254,38 @@ void run_tests_worker(int step)
 }
 
 // -----------------------------------------------------------------------------
+// The tests. One Test object per function / precision combination.
+
+#define FB(N, B)                                                               \
+	new TestFunc<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
+
+#define FB2(N, B)                                                              \
+	new TestFunc2<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
+
+#define FUNC(N)                                                                \
+	FB(N, 0), FB(N, 1), FB(N, 2), FB(N, 3), FB(N, 4), FB(N, 5), FB(N, 6),      \
+		FB(N, 7), FB(N, 8), FB(N, 9), FB(N, 10), FB(N, 11), FB(N, 12),         \
+		FB(N, 13), FB(N, 14), FB(N, 15), FB(N, 16), FB(N, 17), FB(N, 18),      \
+		FB(N, 19), FB(N, 20), FB(N, 21), FB(N, 22), FB(N, 23), FB(N, 24),      \
+		FB(N, 25), FB(N, 26), FB(N, 27), FB(N, 28), FB(N, 29), FB(N, 30)
+
+#define FUNC2(N)                                                               \
+	FB2(N, 0), FB2(N, 1), FB2(N, 2), FB2(N, 3), FB2(N, 4), FB2(N, 5),          \
+		FB2(N, 6), FB2(N, 7), FB2(N, 8), FB2(N, 9), FB2(N, 10), FB2(N, 11),    \
+		FB2(N, 12), FB2(N, 13), FB2(N, 14), FB2(N, 15), FB2(N, 16),            \
+		FB2(N, 17), FB2(N, 18), FB2(N, 19), FB2(N, 20), FB2(N, 21),            \
+		FB2(N, 22), FB2(N, 23), FB2(N, 24), FB2(N, 25), FB2(N, 26),            \
+		FB2(N, 27), FB2(N, 28), FB2(N, 29), FB2(N, 30)
+
+deque<Test*> _tests{
+	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc), FUNC(sqrt),   FUNC(sin),
+	FUNC(cos),  FUNC(tan),   FUNC(exp),  FUNC2(fmod), FUNC2(atan2),
+};
+
+const int _num_tests = _tests.size();
+
+// -----------------------------------------------------------------------------
+// And finally...
 
 void usage(const char* exe)
 {
