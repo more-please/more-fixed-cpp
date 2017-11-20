@@ -148,32 +148,38 @@ struct TestFunc2 : public Test
 
 	virtual bool test_all(int step)
 	{
-		bool ok = test(0);
+		vector<int32_t> reprs;
+
 		int32_t i;
-		for (i = 0; ok && i < 4; ++i) {
-			ok = ok && test_repr(INT32_MIN + i);
-			ok = ok && test_repr(INT32_MAX - i);
-			ok = ok && test_repr(i + 1);
-			ok = ok && test_repr(-i - 1);
-			ok = ok && test(i + 1);
-			ok = ok && test(-i - 1);
+		for (i = 0; i < 4; ++i) {
+			reprs.push_back(INT32_MIN + i);
+			reprs.push_back(INT32_MAX - i);
+			reprs.push_back(i);
+			reprs.push_back(-i);
+			reprs.push_back(FIXED(i).repr());
+			reprs.push_back(FIXED(-i).repr());
 		}
+
+		bool ok = true;
+		for (auto& a : reprs)
+			for (auto& b : reprs)
+				ok = ok && test_repr(a, b);
+
+		uint32_t j = 0;
 		for (i = INT32_MIN + step; ok && i < INT32_MAX - step; i += step) {
-			ok = ok && test_repr(i);
+			j += 2654435789u; // Prime close to UINT32_MAX * phi
+			ok = ok && test_repr(i, int32_t(j));
 		}
+
 		print("%s", ok ? "ok" : "FAILED");
 		return ok;
 	}
 
 private:
-	bool test_repr(int32_t a) { return test_repr(a, a); }
-
 	bool test_repr(int32_t a, int32_t b)
 	{
 		return test(FIXED::from_repr(a), FIXED::from_repr(b));
 	}
-
-	bool test(FIXED a) { return test(a, a); }
 
 	bool test(FIXED fa, FIXED fb)
 	{
