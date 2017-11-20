@@ -73,6 +73,12 @@ namespace more
 			if (!condition) ERR();
 		}
 
+		static F fail()
+		{
+			ERR();
+			return 0;
+		}
+
 	public:
 		typedef int32_t repr_t;
 
@@ -201,7 +207,7 @@ namespace more
 
 		static F sqrt(F f)
 		{
-			check(f >= 0);
+			if (f < 0) return fail();
 			int64_t target = f.repr64() << BITS;
 			int64_t root = 0;
 			constexpr int MAX_BIT = BITS + (30 - BITS) / 2;
@@ -212,12 +218,18 @@ namespace more
 			return from_repr(root);
 		}
 
+		static F fmod(F a, F b)
+		{
+			if (b._repr == 0) return fail();
+			if (b._repr == -1 && a._repr == INT32_MIN) return 0;
+			return from_repr(a._repr % b._repr);
+		}
+
 		static F sin(F f) { return ::sin(double(f)); }
 		static F cos(F f) { return ::cos(double(f)); }
 		static F tan(F f) { return ::tan(double(f)); }
 		static F exp(F f) { return ::exp(double(f)); }
 
-		static F fmod(F a, F b) { return ::fmod(double(a), double(b)); }
 		static F atan2(F a, F b) { return ::atan2(double(a), double(b)); }
 	};
 

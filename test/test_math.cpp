@@ -162,8 +162,7 @@ struct TestFunc2 : public Test
 
 		bool ok = true;
 		for (auto& a : reprs)
-			for (auto& b : reprs)
-				ok = ok && test_repr(a, b);
+			for (auto& b : reprs) ok = ok && test_repr(a, b);
 
 		uint32_t j = 0;
 		for (i = INT32_MIN + step; ok && i < INT32_MAX - step; i += step) {
