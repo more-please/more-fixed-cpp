@@ -153,6 +153,7 @@ namespace more
 		}
 		F operator/(const F& rhs) const
 		{
+			if (rhs._repr == 0) return fail();
 			return from_repr64((repr64() * SCALE) / rhs._repr);
 		}
 
@@ -196,6 +197,22 @@ namespace more
 			static constexpr F max() { return from_repr(repr_limits::max()); }
 			static constexpr F epsilon() { return from_repr(1); }
 		};
+
+		// ---------------------------------------------------------------------
+		// Convenient accessors for operators
+
+		static F negate(F a) { return -a; }
+		static F plus(F a, F b) { return a + b; }
+		static F minus(F a, F b) { return a - b; }
+		static F times(F a, F b) { return a * b; }
+		static F divide(F a, F b) { return a / b; }
+
+		static bool equal(F a, F b) { return a == b; }
+		static bool neq(F a, F b) { return a != b; }
+		static bool lower(F a, F b) { return a < b; }
+		static bool leq(F a, F b) { return a <= b; }
+		static bool greater(F a, F b) { return a > b; }
+		static bool geq(F a, F b) { return a >= b; }
 
 		// ---------------------------------------------------------------------
 		// math.h

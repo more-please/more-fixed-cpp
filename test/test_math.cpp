@@ -226,6 +226,85 @@ private:
 };
 
 // -----------------------------------------------------------------------------
+// Test implementation for boolean operators
+
+template <typename FIXED, bool (*DFUNC)(double, double), bool (*FFUNC)(FIXED, FIXED)>
+struct TestFuncB : public Test
+{
+	TestFuncB(const char* name, mutex& mutex) : Test(name, FIXED::BITS, mutex)
+	{}
+
+	virtual bool test_all(int step)
+	{
+		vector<int32_t> reprs;
+
+		int32_t i;
+		for (i = 0; i < 4; ++i) {
+			reprs.push_back(INT32_MIN + i);
+			reprs.push_back(INT32_MAX - i);
+			reprs.push_back(i);
+			reprs.push_back(-i);
+			reprs.push_back(FIXED(i).repr());
+			reprs.push_back(FIXED(-i).repr());
+		}
+
+		bool ok = true;
+		for (auto& a : reprs)
+			for (auto& b : reprs) ok = ok && test_repr(a, b);
+
+		uint32_t j = 0;
+		for (i = INT32_MIN + step; ok && i < INT32_MAX - step; i += step) {
+			j += 2654435789u; // Prime close to UINT32_MAX * phi
+			ok = ok && test_repr(i, int32_t(j));
+		}
+
+		print("%s", ok ? "ok" : "FAILED");
+		return ok;
+	}
+
+private:
+	bool test_repr(int32_t a, int32_t b)
+	{
+		return test(FIXED::from_repr(a), FIXED::from_repr(b));
+	}
+
+	bool test(FIXED fa, FIXED fb)
+	{
+		const double da = double(fa);
+		const double db = double(fb);
+
+		get_overflow();
+
+		const bool expected = DFUNC(da, db);
+		const bool actual = FFUNC(fa, fb);
+
+		if (get_overflow()) {
+			print(
+				"%f, %f: expected %s, got NaN",
+				da,
+				db,
+				expected ? "true" : "false");
+			return false;
+		}
+		if (actual != expected) {
+			log_error(da, db, expected, actual);
+			return false;
+		}
+		return true;
+	}
+
+	void log_error(double a, double b, bool expected, bool actual)
+	{
+		print(
+			"%f, %f: expected %s, got %s",
+			a,
+			b,
+			expected ? "true" : "false",
+			actual ? "true" : "false");
+	}
+};
+
+// -----------------------------------------------------------------------------
 // Test runner - pulls tests from the queue, designed to work in a thread pool
 
 mutex _mutex{};
@@ -259,13 +338,27 @@ void run_tests_worker(int step)
 }
 
 // -----------------------------------------------------------------------------
+// Function wrappers for binary operators
+
+template <typename T> T negate(T a) { return -a; }
+template <typename T> T plus(T a, T b) { return a + b; }
+template <typename T> T minus(T a, T b) { return a - b; }
+template <typename T> T times(T a, T b) { return a * b; }
+template <typename T> T divide(T a, T b) { return a / b; }
+
+template <typename T> bool equal(T a, T b) { return a == b; }
+template <typename T> bool neq(T a, T b) { return a != b; }
+template <typename T> bool lower(T a, T b) { return a < b; }
+template <typename T> bool leq(T a, T b) { return a <= b; }
+template <typename T> bool greater(T a, T b) { return a > b; }
+template <typename T> bool geq(T a, T b) { return a >= b; }
+
+// -----------------------------------------------------------------------------
 // The tests. One Test object per function / precision combination.
 
+// Unary functions
 #define FB(N, B)                                                               \
 	new TestFunc<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
-
-#define FB2(N, B)                                                              \
-	new TestFunc2<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
 
 #define FUNC(N)                                                                \
 	FB(N, 0), FB(N, 1), FB(N, 2), FB(N, 3), FB(N, 4), FB(N, 5), FB(N, 6),      \
@@ -273,6 +366,10 @@ void run_tests_worker(int step)
 		FB(N, 13), FB(N, 14), FB(N, 15), FB(N, 16), FB(N, 17), FB(N, 18),      \
 		FB(N, 19), FB(N, 20), FB(N, 21), FB(N, 22), FB(N, 23), FB(N, 24),      \
 		FB(N, 25), FB(N, 26), FB(N, 27), FB(N, 28), FB(N, 29), FB(N, 30)
+
+// Binary functions
+#define FB2(N, B)                                                              \
+	new TestFunc2<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
 
 #define FUNC2(N)                                                               \
 	FB2(N, 0), FB2(N, 1), FB2(N, 2), FB2(N, 3), FB2(N, 4), FB2(N, 5),          \
@@ -282,9 +379,24 @@ void run_tests_worker(int step)
 		FB2(N, 22), FB2(N, 23), FB2(N, 24), FB2(N, 25), FB2(N, 26),            \
 		FB2(N, 27), FB2(N, 28), FB2(N, 29), FB2(N, 30)
 
+// Boolean operators
+#define FBB(N, B)                                                              \
+	new TestFuncB<fixed<B, overflow>, ::N, fixed<B, overflow>::N>(#N, _mutex)
+
+#define FUNCB(N)                                                               \
+	FBB(N, 0), FBB(N, 1), FBB(N, 2), FBB(N, 3), FBB(N, 4), FBB(N, 5),          \
+		FBB(N, 6), FBB(N, 7), FBB(N, 8), FBB(N, 9), FBB(N, 10), FBB(N, 11),    \
+		FBB(N, 12), FBB(N, 13), FBB(N, 14), FBB(N, 15), FBB(N, 16),            \
+		FBB(N, 17), FBB(N, 18), FBB(N, 19), FBB(N, 20), FBB(N, 21),            \
+		FBB(N, 22), FBB(N, 23), FBB(N, 24), FBB(N, 25), FBB(N, 26),            \
+		FBB(N, 27), FBB(N, 28), FBB(N, 29), FBB(N, 30)
+
 deque<Test*> _tests{
-	FUNC(fabs), FUNC(floor), FUNC(ceil), FUNC(trunc), FUNC(sqrt),   FUNC(sin),
-	FUNC(cos),  FUNC(tan),   FUNC(exp),  FUNC2(fmod), FUNC2(atan2),
+	FUNC(fabs),		FUNC(floor),  FUNC(ceil),  FUNC(trunc),  FUNC(sqrt),
+	FUNC(sin),		FUNC(cos),	FUNC(tan),   FUNC(exp),	FUNC(negate),
+	FUNC2(fmod),	FUNC2(atan2), FUNC2(plus), FUNC2(minus), FUNC2(times),
+	FUNC2(divide),  FUNCB(equal), FUNCB(neq),  FUNCB(lower), FUNCB(leq),
+	FUNCB(greater), FUNCB(geq),
 };
 
 const int _num_tests = _tests.size();
