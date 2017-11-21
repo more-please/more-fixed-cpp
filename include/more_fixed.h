@@ -106,10 +106,10 @@ namespace more
 
 		template <typename T> explicit operator T() const
 		{
-			if (std::numeric_limits<T>::is_integer)
-				return T(_repr / SCALE);
-			else
-				return T(_repr) / T(SCALE);
+			constexpr bool integer = std::numeric_limits<T>::is_integer;
+			constexpr int32_t intScale = integer ? SCALE : 1;
+			constexpr T realScale = integer ? 1 : T(SCALE);
+			return T(_repr / intScale) / realScale;
 		}
 
 		// ---------------------------------------------------------------------
